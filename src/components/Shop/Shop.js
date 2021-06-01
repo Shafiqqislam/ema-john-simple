@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import fakeData from '../../fakeData';
 import { addToDatabaseCart, getDatabaseCart } from '../../utilities/databaseManager';
 import Cart from '../Cart/Cart';
 import Product from '../Product/Product';
@@ -8,21 +7,35 @@ import { Link } from 'react-router-dom';
 
 
 const Shop = () => {
-   const first10 =fakeData.slice(0,10);
-   const [products,setProducts]= useState(first10);
+//    const first10 =fakeData.slice(0,10);
+   const [products,setProducts]= useState([]);
    const [cart,setCart]=useState([]);
+   const [search,setSearch]=useState('');
+   useEffect(()=>{
+        fetch('http://localhost:5000/products?search='+search)
+        .then(res=>res.json())
+        .then(data=>setProducts(data))
+   },[search])
 
    useEffect(() =>{
     const savedCart= getDatabaseCart();
     const productKeys=Object.keys(savedCart);
-
-     const cartProducts = productKeys.map(key => {
-         const product = fakeData.find(pd => pd.key === key);
-         product.quantity = savedCart[key];
-         return product;
-     });
-   setCart(cartProducts);
+     console.log(products,productKeys)
+     fetch('http://localhost:5000/productsByKeys',{
+       method:'POST',
+       headers:{
+         'Content-Type':'application/json'
+       },
+       body:JSON.stringify(productKeys)
+     })
+     .then(res=>res.json())
+     .then(data=>setCart(data))
+     
   },[])
+
+  const handleSearch =event=>{
+setSearch(event.target.value)
+  }
    const handleAddProduct = (product)=>{
        //console.log('added',product);
        const toBeAddedKey=product.key;
@@ -46,6 +59,7 @@ const Shop = () => {
     return (
         <div className="shop-container">
            <div className="products-container">
+             <input type="text" onBlur={handleSearch} placeholder="product-search"/>
                 {
                     products.map(pd=> <Product showAddToCart={true} handleAddProduct={handleAddProduct} key={pd.key} product={pd}></Product> )
                 }
